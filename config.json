@@ -1,7 +1,7 @@
 {
 	"sourceField": "Front",
 	"delimiter": " ",
-	"searchQueries": [
+	"queryConfigs": [
 		{
 			"Label": "Word",
 			"Search Term": "{}",

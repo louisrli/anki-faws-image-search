@@ -13,6 +13,7 @@ ConfigKeys = {
   SOURCE_FIELD: "sourceField",
   DELIMITER: "delimiter",
   LABEL: "label",
+  QUERY_CONFIGS: "queryConfigs",
   SEARCH_TERM: "searchTerm",
   TARGET_FIELD: "targetField",
   RESULT_COUNT: "resultCount",
@@ -27,6 +28,8 @@ ConfigDefaults = {
   HEIGHT: 260,
   OVERWRITE: "Skip",
   IGNORED: "<ignored>",
+  # The placeholder value in the search term the user provides.
+  WORD_PLACEHOLDER: "{}",
 }
 
 def make_target_field_select(options, config_value) -> QComboBox:

@@ -6,23 +6,10 @@ from aqt import gui_hooks
 
 # See main.ui
 from .designer.main import Ui_Dialog
-from .ui_helpers import ConfigDefaults, ConfigKeys, COLUMN_LABELS
+from .ui_helpers import ConfigDefaults, ConfigKeys, COLUMN_LABELS, OverwriteValues
 from .ui_helpers import make_target_field_select, make_dimension_spin_box, make_overwrite_select, make_result_count_box
 
-from PIL import Image, ImageSequence, UnidentifiedImageError
-
-SPOOFED_HEADER = {
-  "User-Agent": "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.67 Safari/537.36"
-}
-
-def sleep(seconds):
-  """
-  Sleep for a certain amount of time.
-  """
-  start = time.time()
-  while time.time() - start < seconds:
-      time.sleep(0.01)
-      QApplication.instance().processEvents()
+from PIL import Image, ImageSequence, Unote_identifiedImageError
 
 def update_notes(browser, notes):
   pass
@@ -85,12 +72,76 @@ def open_add_images_dialog(browser: browser.Browser) -> None:
     form.gridLayout.addWidget(make_dimension_spin_box(width, "Height"), 6)
 
   # TODO: document this
-  if not d.exec_():
+  if not dialog.exec_():
     return
+  scrape_images_and_update(form, selected_notes)
 
-  # Save new config to disk.
+def scrape_images_and_update(form, note_ids):
+  """
+  Main entry point for logic that runs after the start button is pressed.
+  """
+  pass
+  # Save new config to disk, then use new config to scrape images.
   new_config = serialize_config_from_ui(form)
   mw.addonManager.writeConfig(__name__, new_config)
+
+  mw.checkpoint("Add Google Images")
+  mw.progress.start(immediate=True)
+  browser.model.beginReset()
+
+  # Begin a pool of executors. One job = one query.
+  with concurrent.futures.ThreadPoolExecutor() as executor:
+      jobs = []
+      processed_notes = set()
+      for c, note_id in enumerate(note_ids, 1):
+          note = mw.col.getNote(note_id)
+          source_value = note[new_config[ConfigKeys.SOURCE_FIELD]]
+
+          query_configs = new_config[ConfigKeys.QUERY_CONFIGS]
+
+          for qc in query_configs:
+              target_field = qc[ConfigKeys.TARGET_FIELD]
+
+              if not target_field:
+                  continue
+
+              # Value already exists, skip to next one.
+              if note[target_field] and qc[ConfigKeys.OVERWRITE] == OverwriteValues.SKIP:
+                  continue
+
+              final_search_query = qc[ConfigKeys.SEARCH_TERM].replace(
+                "{}",
+                strip_html_clozes(source_value)
+              ) 
+
+              # Here we start pushing the heavy lifting scraping jobs into the
+              # queue.
+
+              
+          done, not_done = concurrent.futures.wait(jobs, timeout=0)
+          for future in done:
+              note_id, fld, images, overwrite = future.result()
+              updateField(note_id, fld, images, overwrite)
+              processed_notes.add(note_id)
+              jobs.remove(future)
+          else:
+              label = "Processed %s notes..." % len(processed_notes)
+              mw.progress.update(label)
+              QApplication.instance().processEvents()
+
+      for future in concurrent.futures.as_completed(jobs):
+          note_id, fld, images, overwrite = future.result()
+          updateField(note_id, fld, images, overwrite)
+          processed_notes.add(note_id)
+          label = "Processed %s notes..." % len(processed_notes)
+          mw.progress.update(label)
+          QApplication.instance().processEvents()
+
+  browser.model.endReset()
+  mw.requireReset()
+  mw.progress.finish()
+  showInfo("Number of notes processed: %d" % len(note_ids), parent=browser)
+
 
   # mpv_executable, env = find_executable("mpv"), os.environ
   # if mpv_executable is None:
