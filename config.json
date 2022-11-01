@@ -1,0 +1,78 @@
+{
+	"sourceField": "Front",
+	"delimiter": " ",
+	"searchQueries": [
+		{
+			"Label": "Word",
+			"Search Term": "{}",
+			"Field": "",
+			"Count": 1,
+			"Width": -1,
+			"Height": 260,
+			"Overwrite": false
+		},
+		{
+			"Label": "Definition",
+			"Search Term": "{} definition",
+			"Field": "",
+			"Count": 1,
+			"Width": -1,
+			"Height": 260,
+			"Overwrite": false
+		},
+		{
+			"Label": "Giphy",
+			"Search Term": "{} giphy",
+			"Field": "",
+			"Count": 1,
+			"Width": -1,
+			"Height": 260,
+			"Overwrite": false
+		},
+		{
+			"Label": "Wikipedia",
+			"Search Term": "{} wikipedia",
+			"Field": "",
+			"Count": 1,
+			"Width": -1,
+			"Height": 260,
+			"Overwrite": false
+		},
+		{
+			"Label": "Wikimedia",
+			"Search Term": "{} wikimedia",
+			"Field": "",
+			"Count": 1,
+			"Width": -1,
+			"Height": 260,
+			"Overwrite": false
+		},
+		{
+			"Label": "Meme",
+			"Search Term": "{} meme",
+			"Field": "",
+			"Count": 1,
+			"Width": -1,
+			"Height": 260,
+			"Overwrite": false
+		},
+		{
+			"Label": "Getty Images",
+			"Search Term": "{} gettyimages",
+			"Field": "",
+			"Count": 1,
+			"Width": -1,
+			"Height": 260,
+			"Overwrite": false
+		},
+		{
+			"Label": "Shutterstock",
+			"Search Term": "{} shutterstock",
+			"Field": "",
+			"Count": 1,
+			"Width": -1,
+			"Height": 260,
+			"Overwrite": false
+		}
+	]
+}
