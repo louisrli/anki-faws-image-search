@@ -3,21 +3,19 @@ Helper functions related to scraping images and network connection.
 """
 from aqt.qt import QApplication
 from bs4 import BeautifulSoup
-
-SPOOFED_HEADER = {
-  "User-Agent": "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.67 Safari/537.36"
-}
+import concurrent.futures
 
 class QueryResult:
   """
   Encapsulates all of the information and configs needed to process a query result and apply
   the changes back into the Anki database.
   """
-  def __self__(note_id: str, target_field: str, overwrite: bool):
-    this._note_id = note_id
-    this._target_field = target_field
-    this._overwrite = overwrite
-    this._images = []
+  def __self__(note_id: str, query: str, target_field: str, overwrite: bool):
+    this.note_id = note_id
+    this.query = query
+    this.target_field = target_field
+    this.overwrite = overwrite
+    this.images = []
 
 def sleep(seconds):
   """
@@ -56,6 +54,48 @@ def strip_html_clozes(w: str) -> str:
   return w
 
  
+class Scraper:
+  SPOOFED_HEADER = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.67 Safari/537.36"
+  }
+
+  def __init__(self, executor: concurrent.futures.ThreadPoolExecutor, jobs:
+               list):
+    self._executor = executor
+    self._jobs = jobs
+
+  def push_scrape_job(result: QueryResult) -> None:
+    """
+    Pushes a new job (future) into the executor using the query result. 
+    """
+    raise Exception("Unimplemented abstract method.")
+
+class GoogleImageScraper(Scraper):
+  """
+  A scraper that targets Google Images.
+
+  This can be refactored if we ever choose to add another source. Things such as
+  retry logic can be extracted into a common class.
+  """
+  SEARCH_FORMAT_URL = "https://www.google.com/search?tbm=isch&q={}&safe=active"
+  TIMEOUT_SEC = 15
+  MAX_RETRIES = 3
+
+  def __init__(self, executor: concurrent.futures.ThreadPoolExecutor, jobs:
+               list):
+    super(executor, jobs)
+
+  def push_scrape_job(result: QueryResult) -> None:
+    # Fire off a request to the image search page, then queue up a job to scrape
+    # the images from the resulting text.
+    # In case of a status exception, retry 
+    search_url = GoogleImageScraper.SEARCH_FORMAT_URL.format(result.query)
+    request = requests.get(headers=Scraper.SPOOFED_HEADER, cookies={"CONSENT":"YES+"},
+                 timeout=TIMEOUT_SEC)
+    r.raise_for_status()
+    future = executor.submit(getImages, nid, df, r.text, q["Width"], q["Height"], q["Count"], q["Overwrite"])
+    jobs.append(future)
+
 def scrape_images_from_url(without_images: QueryResult, max_retries=3) -> QueryResult:
   """
   Site-agnostic function to scrape images from a URL with retry functionality.
@@ -65,7 +105,7 @@ def scrape_images_from_url(without_images: QueryResult, max_retries=3) -> QueryR
   retry_cnt = 0
   while True:
       try:
-          r = requests.get("https://www.google.com/search?tbm=isch&q={}&safe=active".format(query), headers=headers, cookies={"CONSENT":"YES+"}, timeout=15)
+          r = requests.get()
           r.raise_for_status()
           future = executor.submit(getImages, nid, df, r.text, q["Width"], q["Height"], q["Count"], q["Overwrite"])
           jobs.append(future)
