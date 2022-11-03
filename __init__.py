@@ -30,11 +30,11 @@ def open_add_images_dialog(browser: browser.Browser) -> None:
 
     # Using the first note in the collection, read the possible fields to
     # configure source/target fields. Set the default field from the config.
-    possible_fields = mw.col.getNote(selected_notes[0]).keys()
-    form.srcField.addItems(possible_fields)
+    note_fields = mw.col.getNote(selected_notes[0]).keys()
+    form.sourceField.addItems(note_fields)
     config_src_field = config[ConfigKeys.SOURCE_FIELD]
-    if config_src_field in fields:
-        form.srcField.setCurrentIndex(fields.index(config_src_field))
+    if config_src_field in note_fields:
+        form.sourceField.setCurrentIndex(note_fields.index(config_src_field))
 
     form.gridLayout.setColumnStretch(1, 1)
     form.gridLayout.setColumnMinimumWidth(1, 120)
@@ -42,7 +42,7 @@ def open_add_images_dialog(browser: browser.Browser) -> None:
     for i, title in enumerate(COLUMN_LABELS):
         form.gridLayout.addWidget(QLabel(title), 0, i)
 
-    for i, sq in enumerate(config["Search Queries"], 1):
+    for i, sq in enumerate(config[ConfigKeys.QUERY_CONFIGS]):
         label = sq[ConfigKeys.LABEL]
         search_term = sq[ConfigKeys.SEARCH_TERM]
         target_field = sq[ConfigKeys.TARGET_FIELD]
@@ -61,12 +61,15 @@ def open_add_images_dialog(browser: browser.Browser) -> None:
         # and COLUMN_LABELS
         form.gridLayout.addWidget(QLineEdit(label), row_idx, 0)
         form.gridLayout.addWidget(QLineEdit(search_term), row_idx, 1)
-        form.gridLayout.addWidget(make_target_field_select(possible_fields,
-                                                           target_field), 2)
-        form.gridLayout.addWidget(make_result_count_box(result_count), 3)
-        form.gridLayout.addWidget(make_overwrite_select(overwrite), 4)
-        form.gridLayout.addWidget(make_dimension_spin_box(width, "Width"), 5)
-        form.gridLayout.addWidget(make_dimension_spin_box(width, "Height"), 6)
+        form.gridLayout.addWidget(make_target_field_select(note_fields,
+                                                           target_field),
+                                  row_idx, 2)
+        form.gridLayout.addWidget(make_result_count_box(result_count), row_idx, 3)
+        form.gridLayout.addWidget(make_overwrite_select(overwrite), row_idx, 4)
+        form.gridLayout.addLayout(make_dimension_spin_box(width, "Width"),
+                                  row_idx, 5)
+        form.gridLayout.addLayout(make_dimension_spin_box(width, "Height"),
+                                  row_idx, 6)
 
     # TODO: document this
     if not dialog.exec_():
@@ -138,17 +141,6 @@ def scrape_images_and_update(form, note_ids):
     mw.requireReset()
     mw.progress.finish()
     showInfo("Number of notes processed: %d" % len(note_ids), parent=browser)
-
-    # mpv_executable, env = find_executable("mpv"), os.environ
-    # if mpv_executable is None:
-    #     mpv_path, env = _packagedCmd(["mpv"])
-    #     mpv_executable = mpv_path[0]
-    #     try:
-    #         with noBundledLibs():
-    #             p = subprocess.Popen([mpv_executable, "--version"], startupinfo=si)
-    #     except OSError:
-    #         mpv_executable = None
-
 
 def setup_menu(browser: browser.Browser) -> None:
     """

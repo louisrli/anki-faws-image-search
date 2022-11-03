@@ -3,76 +3,76 @@
 	"delimiter": " ",
 	"queryConfigs": [
 		{
-			"Label": "Word",
-			"Search Term": "{}",
-			"Field": "",
-			"Count": 1,
-			"Width": -1,
-			"Height": 260,
-			"Overwrite": false
+			"label": "Word",
+			"searchTerm": "{}",
+			"targetField": "",
+			"resultCount": 1,
+			"width": -1,
+			"height": 260,
+			"overwrite": "OVERWRITE"
 		},
 		{
-			"Label": "Definition",
-			"Search Term": "{} definition",
-			"Field": "",
-			"Count": 1,
-			"Width": -1,
-			"Height": 260,
-			"Overwrite": false
+			"label": "Definition",
+			"searchTerm": "{} definition",
+			"targetField": "",
+			"resultCount": 1,
+			"width": -1,
+			"height": 260,
+			"overwrite": "SKIP"
 		},
 		{
-			"Label": "Giphy",
-			"Search Term": "{} giphy",
-			"Field": "",
-			"Count": 1,
-			"Width": -1,
-			"Height": 260,
-			"Overwrite": false
+			"label": "Giphy",
+			"searchTerm": "{} giphy",
+			"targetField": "",
+			"resultCount": 1,
+			"width": -1,
+			"height": 260,
+			"overwrite": "SKIP"
 		},
 		{
-			"Label": "Wikipedia",
-			"Search Term": "{} wikipedia",
-			"Field": "",
-			"Count": 1,
-			"Width": -1,
-			"Height": 260,
-			"Overwrite": false
+			"label": "Wikipedia",
+			"searchTerm": "{} wikipedia",
+			"targetField": "",
+			"resultCount": 1,
+			"width": -1,
+			"height": 260,
+			"overwrite": "SKIP"
 		},
 		{
-			"Label": "Wikimedia",
-			"Search Term": "{} wikimedia",
-			"Field": "",
-			"Count": 1,
-			"Width": -1,
-			"Height": 260,
-			"Overwrite": false
+			"label": "Wikimedia",
+			"searchTerm": "{} wikimedia",
+			"targetField": "",
+			"resultCount": 1,
+			"width": -1,
+			"height": 260,
+			"overwrite": "SKIP"
 		},
 		{
-			"Label": "Meme",
-			"Search Term": "{} meme",
-			"Field": "",
-			"Count": 1,
-			"Width": -1,
-			"Height": 260,
-			"Overwrite": false
+			"label": "Meme",
+			"searchTerm": "{} meme",
+			"targetField": "",
+			"resultCount": 1,
+			"width": -1,
+			"height": 260,
+			"overwrite": "SKIP"
 		},
 		{
-			"Label": "Getty Images",
-			"Search Term": "{} gettyimages",
-			"Field": "",
-			"Count": 1,
-			"Width": -1,
-			"Height": 260,
-			"Overwrite": false
+			"label": "Getty Images",
+			"searchTerm": "{} gettyimages",
+			"targetField": "",
+			"resultCount": 1,
+			"width": -1,
+			"height": 260,
+			"overwrite": "SKIP"
 		},
 		{
-			"Label": "Shutterstock",
-			"Search Term": "{} shutterstock",
-			"Field": "",
-			"Count": 1,
-			"Width": -1,
-			"Height": 260,
-			"Overwrite": false
+			"label": "Shutterstock",
+			"searchTerm": "{} shutterstock",
+			"targetField": "",
+			"resultCount": 1,
+			"width": -1,
+			"height": 260,
+			"overwrite": "SKIP"
 		}
 	]
 }

@@ -52,7 +52,7 @@ def make_target_field_select(options, config_value) -> QComboBox:
     comboBox.addItems(options)
 
     if config_value in options:
-        # + 1 because ignoring options
+        # + 1 because of the "<ignore>" option that we added earlier
         comboBox.setCurrentIndex(options.index(config_value) + 1)
     return comboBox
 
