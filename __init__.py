@@ -9,13 +9,6 @@ from .designer.main import Ui_Dialog
 from .ui_helpers import ConfigDefaults, ConfigKeys, COLUMN_LABELS, OverwriteValues
 from .ui_helpers import make_target_field_select, make_dimension_spin_box, make_overwrite_select, make_result_count_box
 
-from PIL import Image, ImageSequence, Unote_identifiedImageError
-
-
-def update_notes(browser, notes):
-    pass
-
-
 def open_add_images_dialog(browser: browser.Browser) -> None:
     """
     Triggered after selecting notes in the browser and clicking "add"

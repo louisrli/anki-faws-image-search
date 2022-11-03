@@ -140,8 +140,7 @@ class GoogleImageScraper(Scraper):
         Function that actually does the scraping of the HTML and so on to find
         images.
         """
-        soup = BeautifulSoup()
-        pass
+        return result
 
 
 def getImages(nid, fld, html, img_width, img_height, img_count, fld_overwrite):

@@ -9,35 +9,37 @@ COLUMN_LABELS = [
     "",
     ""]
 
-# Essentially an enum for values of overwriting.
-OverwriteValues = {
-    OVERWRITE: "Overwrite",
-    SKIP: "Skip",
-    APPEND: "Append",
-}
+class OverwriteValues:
+    """
+    Possible values for the overwrite config.
+    """
+    OVERWRITE = "Overwrite"
+    SKIP = "Skip"
+    APPEND = "Append"
 
-ConfigKeys = {
-    SOURCE_FIELD: "sourceField",
-    DELIMITER: "delimiter",
-    LABEL: "label",
-    QUERY_CONFIGS: "queryConfigs",
-    SEARCH_TERM: "searchTerm",
-    TARGET_FIELD: "targetField",
-    RESULT_COUNT: "resultCount",
-    WIDTH: "width",
-    HEIGHT: "height",
-    OVERWRITE: "overwrite",
-}
+class ConfigKeys:
+    """
+    See config.json
+    """
+    SOURCE_FIELD = "sourceField"
+    DELIMITER = "delimiter"
+    LABEL = "label"
+    QUERY_CONFIGS = "queryConfigs"
+    SEARCH_TERM = "searchTerm"
+    TARGET_FIELD = "targetField"
+    RESULT_COUNT = "resultCount"
+    WIDTH = "width"
+    HEIGHT = "height"
+    OVERWRITE = "overwrite"
 
-ConfigDefaults = {
-    RESULT_COUNT: 1,
-    WIDTH: -1,
-    HEIGHT: 260,
-    OVERWRITE: "Skip",
-    IGNORED: "<ignored>",
+class ConfigDefaults:
+    RESULT_COUNT = 1
+    WIDTH = -1
+    HEIGHT = 260
+    OVERWRITE = "Skip"
+    IGNORED = "<ignored>"
     # The placeholder value in the search term the user provides.
-    WORD_PLACEHOLDER: "{}",
-}
+    WORD_PLACEHOLDER = "{}"
 
 
 def make_target_field_select(options, config_value) -> QComboBox:
