@@ -7,7 +7,7 @@ from aqt import gui_hooks
 # See main.ui
 from .designer.main import Ui_Dialog
 from .ui_helpers import ConfigDefaults, ConfigKeys, COLUMN_LABELS, OverwriteValues
-from .ui_helpers import make_target_field_select, make_dimension_spin_box, make_overwrite_select, make_result_count_box
+from .ui_helpers import make_target_field_select, make_dimension_spin_box, make_overwrite_select, make_result_count_box, serialize_config_from_ui
 
 def open_add_images_dialog(browser: browser.Browser) -> None:
     """
@@ -76,7 +76,6 @@ def open_add_images_dialog(browser: browser.Browser) -> None:
         return
     scrape_images_and_update(form, selected_notes)
 
-
 def scrape_images_and_update(form, note_ids):
     """
     Main entry point for logic that runs after the start button is pressed.
@@ -85,6 +84,8 @@ def scrape_images_and_update(form, note_ids):
     # Save new config to disk, then use new config to scrape images.
     new_config = serialize_config_from_ui(form)
     mw.addonManager.writeConfig(__name__, new_config)
+    print(new_config)
+    return
 
     mw.checkpoint("Add Google Images")
     mw.progress.start(immediate=True)

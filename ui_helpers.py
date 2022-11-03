@@ -117,6 +117,7 @@ def serialize_config_from_ui(form):
 
     See config.json for the default config.
     """
+    config = {}
     source_field = form.sourceField.currentText()
     config[ConfigKeys.SOURCE_FIELD] = source_field
 
