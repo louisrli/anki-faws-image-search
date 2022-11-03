@@ -60,9 +60,10 @@ class Scraper:
   }
 
   def __init__(self, executor: concurrent.futures.ThreadPoolExecutor, jobs:
-               list):
+               list, mw):
     self._executor = executor
     self._jobs = jobs
+    self._mw = mw
 
   def push_scrape_job(result: QueryResult) -> None:
     """
@@ -80,50 +81,56 @@ class GoogleImageScraper(Scraper):
   SEARCH_FORMAT_URL = "https://www.google.com/search?tbm=isch&q={}&safe=active"
   TIMEOUT_SEC = 15
   MAX_RETRIES = 3
+  # Number of seconds to sleep per retry on rate limit error.
+  THROTTLE_SLEEP_SEC = 30
+  # Number of seconds to sleep per retry on timeout error.
+  TIMEOUT_SLEEP_SEC = 5
 
   def __init__(self, executor: concurrent.futures.ThreadPoolExecutor, jobs:
-               list):
-    super(executor, jobs)
+               list, mw):
+    super(executor, jobs, mw)
 
   def push_scrape_job(result: QueryResult) -> None:
     # Fire off a request to the image search page, then queue up a job to scrape
-    # the images from the resulting text.
+    # the images from the resulting text. Note that the REQUEST is not
+    # multithreaded, but parsing/extracting images is (disputable whether this
+    # is the correct architecture, but I'm just going to copy this guy's code).
     # In case of a status exception, retry 
     search_url = GoogleImageScraper.SEARCH_FORMAT_URL.format(result.query)
-    request = requests.get(headers=Scraper.SPOOFED_HEADER, cookies={"CONSENT":"YES+"},
-                 timeout=TIMEOUT_SEC)
-    r.raise_for_status()
-    future = executor.submit(getImages, nid, df, r.text, q["Width"], q["Height"], q["Count"], q["Overwrite"])
-    jobs.append(future)
-
-def scrape_images_from_url(without_images: QueryResult, max_retries=3) -> QueryResult:
-  """
-  Site-agnostic function to scrape images from a URL with retry functionality.
-
-  TODO: Consider refactoring this into a parent class for scrapers.
-  """
-  retry_cnt = 0
-  while True:
+    retry_count = 0
+    while retry_count < GoogleImageScraper.MAX_RETRIES:
       try:
-          r = requests.get()
-          r.raise_for_status()
-          future = executor.submit(getImages, nid, df, r.text, q["Width"], q["Height"], q["Count"], q["Overwrite"])
-          jobs.append(future)
-          break
+        request = requests.get(headers=Scraper.SPOOFED_HEADER, cookies={"CONSENT":"YES+"},
+                     timeout=TIMEOUT_SEC)
+        r.raise_for_status()
+        future = executor.submit(self._parse_and_download_images(r.text), result)
+        jobs.append(future)
+        break
       except requests.exceptions.RequestException as e:
-          if retry_cnt == max_retries:
-              raise
-          retry_cnt += 1
-          if isinstance(e, requests.exceptions.HTTPError) and e.response.status_code == 429:
-              mw.progress.update(f"Sleeping for {retry_cnt * 30} seconds...")
-              QApplication.instance().processEvents()
-              sleep(retry_cnt * 30)
-          elif isinstance(e, (requests.exceptions.ReadTimeout, requests.exceptions.ConnectionError)):
-              mw.progress.update(f"Sleeping for {retry_cnt * 5} seconds...")
-              QApplication.instance().processEvents()
-              sleep(retry_cnt * 5)
-          else:
-              raise
+        if retry_count == GoogleImageScraper.MAX_RETRIES:
+          raise Exception("Exceeded max retries. Unable to scrape for query: %s" % result.query)
+        retry_count += 1
+        if isinstance(e, requests.exceptions.HTTPError) and e.response.status_code == 429:
+          # Retry on 429: we were rate limited
+            self._mw.progress.update(f"Sleeping for {retry_cnt * 30} seconds...")
+            QApplication.instance().processEvents()
+            sleep(retry_cnt * GoogleImageScraper.THROTTLE_SLEEP_SEC)
+        elif isinstance(e, (requests.exceptions.ReadTimeout, requests.exceptions.ConnectionError)):
+          # Connection error
+            self._mw.progress.update(f"Sleeping for {retry_cnt * 5} seconds...")
+            QApplication.instance().processEvents()
+            sleep(retry_cnt * GoogleImageScraper.TIMEOUT_SLEEP_SEC)
+        else:
+            raise e
+
+  def _parse_and_download_images(page_text: str, result: QueryResult):
+    """
+    Function that actually does the scraping of the HTML and so on to find
+    images.
+    """
+    soup = BeautifulSoup()
+    pass
+
 
 def getImages(nid, fld, html, img_width, img_height, img_count, fld_overwrite):
                     soup = BeautifulSoup(html, "html.parser")
