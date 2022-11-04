@@ -73,7 +73,7 @@ class Scraper:
         self._executor = executor
         self._mw = mw
 
-    def push_scrape_job(result: QueryResult) -> None:
+    def push_scrape_job(self, result: QueryResult) -> None:
         """
         Pushes a new job (future) into the executor using the query result.
         """
@@ -101,7 +101,7 @@ class BingImageScraper(Scraper):
     def __init__(self, executor: concurrent.futures.ThreadPoolExecutor, mw):
         super(executor, mw)
 
-    def push_scrape_job(result: QueryResult) -> None:
+    def push_scrape_job(self, result: QueryResult) -> None:
         # Fire off a request to the image search page, then queue up a job to scrape
         # the images from the resulting text. Note that the REQUEST is not
         # multithreaded, but parsing/extracting images is (disputable whether this
@@ -139,7 +139,7 @@ class BingImageScraper(Scraper):
                 else:
                     raise e
 
-    def _parse_and_download_images(html: str, result: QueryResult) -> QueryResult:
+    def _parse_and_download_images(self, html: str, result: QueryResult) -> QueryResult:
         """
         Parses the image URLs out of the HTML. Processes and resizes them.
         """
@@ -170,12 +170,13 @@ class BingImageScraper(Scraper):
             if is_gif:
                 continue
 
-            buf = _maybe_resize_image(req.content)
+            try: 
+                buf = self._maybe_resize_image(req.content)
             filename = checksum(url + result.query)
             filename_img_pairs.append((filename, buf.getvalue()))
             num_processed += 1
 
-    def _maybe_resize_image(img_data: io.BytesIO, user_width: int, user_height: int) -> io.BytesIO:
+    def _maybe_resize_image(self, img_data: io.BytesIO, user_width: int, user_height: int) -> io.BytesIO:
         should_resize = user_width > 0 or user_height > 0
         if not should_resize:
             return io.BytesIO(data)
