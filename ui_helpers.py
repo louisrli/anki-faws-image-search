@@ -42,7 +42,7 @@ QUERY_CONFIG_KEY_ORDER = (
 class ConfigDefaults:
     RESULT_COUNT = 1
     WIDTH = -1
-    HEIGHT = 260
+    HEIGHT = -1
     OVERWRITE = "Skip"
     IGNORED = "<ignored>"
     # The placeholder value in the search term the user provides.
@@ -105,7 +105,7 @@ def make_dimension_spin_box(config_value, label) -> QHBoxLayout:
     spinBox.setMinimum(-1)
     spinBox.setMaximum(9999)
     spinBox.setValue(config_value)
-    spinBox.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+    spinBox.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
     hbox.addWidget(spinBox)
     return hbox
 

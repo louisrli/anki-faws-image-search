@@ -78,7 +78,7 @@ def open_add_images_dialog(browser: aqt.browser.Browser) -> None:
                                   row_idx, 6)
 
     # TODO: document this
-    if not dialog.exec_():
+    if not dialog.exec():
         return
     scrape_images_and_update(form, selected_notes, browser)
 
