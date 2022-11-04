@@ -90,7 +90,6 @@ def scrape_images_and_update(form, note_ids, browser):
     # Save new config to disk, then use new config to scrape images.
     new_config = serialize_config_from_ui(form)
     mw.addonManager.writeConfig(__name__, new_config)
-    print(new_config)
 
     mw.checkpoint("Add Bing Images")
     mw.progress.start(immediate=True)
@@ -192,7 +191,7 @@ def setup_menu(browser: aqt.browser.Browser) -> None:
     """
     menu = browser.form.menuEdit
     menu.addSeparator()
-    new_action = menu.addAction('BatchImage: Add images to selected cards')
+    new_action = menu.addAction('FawsImageSearch: Add images to the selected cards')
     new_action.triggered.connect(
         lambda _, b=browser: open_add_images_dialog(b))
 

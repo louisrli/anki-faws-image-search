@@ -9,6 +9,7 @@ import requests
 from bs4 import BeautifulSoup
 import concurrent.futures
 from anki.utils import checksum
+from .logging import logger
 
 class QueryResult(NamedTuple):
     """
@@ -124,7 +125,6 @@ class BingScraper(Scraper):
                 req = requests.get(search_url, headers=Scraper.SPOOFED_HEADER,
                                    timeout=BingScraper.TIMEOUT_SEC)
                 req.raise_for_status()
-                print(req.text)
                 future = self._executor.submit(
                     self._parse_and_download_images, req.text, result)
                 return future
@@ -161,23 +161,21 @@ class BingScraper(Scraper):
         from PIL import UnidentifiedImageError
         image_urls = re.findall(BingScraper.IMAGE_URL_REGEX, html)
         num_processed = 0
-        print(image_urls)
-        # TODO: good place to put debug for checking if regex fails
+        if len(image_urls):
+            logger.debug("Found 0 image URLs for query: %s" % result.query)
+
         for url in image_urls:
             if num_processed == result.max_results:
                 break
 
             try:
-                print("sent request %s" % url)  
                 req = requests.get(url,
                                    headers=Scraper.SPOOFED_HEADER,
                                    timeout=BingScraper.TIMEOUT_SEC)
                 req.raise_for_status()
             except requests.packages.urllib3.exceptions.LocationParseError:
-                print("location parse")
                 continue
             except requests.exceptions.RequestException:
-                print("request exception")
                 continue
 
             # Ignore SVGs. Dunno, the last guy did it too, maybe they won't work
@@ -189,10 +187,8 @@ class BingScraper(Scraper):
                 buf = _maybe_resize_image(req.content, result.width,
                                           result.height)
             except UnidentifiedImageError:
-                print("Unidentified image error.")
                 continue
             except UnicodeError as e:
-                print("unicode image error.")
                 # UnicodeError: encoding with 'idna' codec failed (UnicodeError: label empty or too long)
                 # https://bugs.python.org/issue32958
                 continue

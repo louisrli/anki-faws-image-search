@@ -47,9 +47,15 @@ for d in data[31][0][12][2]:
 	pass
 ```
 
-Nothing against the author -- there's no avoiding something like that based on how Google has structured their page results, so this is about the best it can get. 
+This is by no means meant to shade the original author -- my point is that
+there's no avoiding something like that based on how Google has structured their
+page results, so this is about the best it can get. 
 
-If the site being scraped eventually changes their format, I definitely don't want to go spending my time to find out whether the 33rd or 34th index of the array is the one that contains what I need. In short, Bing has somewhat lower quality of images but a more maintainable way of accessing the images.
+If the site being scraped eventually changes their format, I don't
+want to go spend time to find out whether the 33rd or 34th index of the
+array is the one that contains image data (and repeat this process multiple
+times throughout the page). In short, Bing has somewhat lower
+quality of images but a more maintainable way of accessing the images.
 
 ## Installation from source
 
@@ -74,5 +80,4 @@ Big thanks goes to @kelciour, who created the
 [batch-download-pictures-from-google-images](https://github.com/kelciour/batch-download-pictures-from-google-images)
 (doesn't work in newer versions of Anki). Much of the code was modeled off of
 his repository.
-
 
