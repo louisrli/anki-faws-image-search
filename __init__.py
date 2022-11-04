@@ -85,9 +85,9 @@ def scrape_images_and_update(form, note_ids):
     new_config = serialize_config_from_ui(form)
     mw.addonManager.writeConfig(__name__, new_config)
     print(new_config)
-    return
 
     mw.checkpoint("Add Google Images")
+    return
     mw.progress.start(immediate=True)
     browser.model.beginReset()
 
@@ -95,6 +95,8 @@ def scrape_images_and_update(form, note_ids):
     with concurrent.futures.ThreadPoolExecutor() as executor:
         jobs = []
         processed_notes = set()
+        scraper = GoogleImageScraper(executor, jobs, mw)
+
         for c, note_id in enumerate(note_ids, 1):
             note = mw.col.getNote(note_id)
             source_value = note[new_config[ConfigKeys.SOURCE_FIELD]]
@@ -104,35 +106,44 @@ def scrape_images_and_update(form, note_ids):
             for qc in query_configs:
                 target_field = qc[ConfigKeys.TARGET_FIELD]
 
-                if not target_field:
+                if not target_field or target_field == ConfigDefaults.IGNORED:
                     continue
 
-                # Value already exists, skip to next one.
+                # Process "Overwrite" config.
                 if note[target_field] and qc[ConfigKeys.OVERWRITE] == OverwriteValues.SKIP:
                     continue
 
                 final_search_query = qc[ConfigKeys.SEARCH_TERM].replace(
-                    "{}",
+                    ConfigDefaults.WORD_PLACEHOLDER,
                     strip_html_clozes(source_value)
                 )
 
                 # Here we start pushing the heavy lifting scraping jobs into the
                 # queue.
+                result = QueryResult()
+                result.note_id = note_id
+                result.query = final_search_query
+                result.target_field = target_field
+                result.overwrite = qc[ConfigKeys.OVERWRITE]
 
-            done, not_done = concurrent.futures.wait(jobs, timeout=0)
-            for future in done:
-                note_id, fld, images, overwrite = future.result()
-                updateField(note_id, fld, images, overwrite)
-                processed_notes.add(note_id)
-                jobs.remove(future)
-            else:
-                label = "Processed %s notes..." % len(processed_notes)
-                mw.progress.update(label)
-                QApplication.instance().processEvents()
+                jobs.append(scraper.push_scrape_job(result))
 
+# This seems to be weird parallelism. Would prefer to scrape all first before
+# trying anything.
+#             done, not_done = concurrent.futures.wait(jobs, timeout=0)
+#             for future in done:
+#                 result = future.result()
+#                 apply_result_to_note(result)
+#                 processed_notes.add(note_id)
+#                 jobs.remove(future)
+#             else:
+#                 label = "Processed %s notes..." % len(processed_notes)
+#                 mw.progress.update(label)
+#                 QApplication.instance().processEvents()
+# 
         for future in concurrent.futures.as_completed(jobs):
-            note_id, fld, images, overwrite = future.result()
-            updateField(note_id, fld, images, overwrite)
+            result = future.result()
+            apply_result_to_note(result)
             processed_notes.add(note_id)
             label = "Processed %s notes..." % len(processed_notes)
             mw.progress.update(label)
@@ -142,6 +153,28 @@ def scrape_images_and_update(form, note_ids):
     mw.requireReset()
     mw.progress.finish()
     showInfo("Number of notes processed: %d" % len(note_ids), parent=browser)
+
+def apply_result_to_note(result: QueryResult) -> None:
+    """
+    Given a QueryResult, mutates a note using the information in the result.
+    """
+    if not result.images:
+        return
+    images_html = []
+    for fname, data in images:
+        fname = mw.col.media.writeData(fname, data)
+        filename = '<img src="%s">' % fname
+        images_html.append(filename)
+    note = mw.col.getNote(result.note_id)
+    # TODO: Make this delimiter a constant
+    delimiter = " "
+    if overwrite == OverwriteValues.APPEND:
+        if note[result.target_field]:
+            note[result.target_field] += delimiter
+        note[result.target_field] += delimiter.join(images_html)
+    else:
+        note[result.target_field] = delimiter.join(images_html)
+    note.flush()
 
 def setup_menu(browser: browser.Browser) -> None:
     """

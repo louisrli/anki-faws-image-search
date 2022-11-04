@@ -5,19 +5,17 @@ from aqt.qt import QApplication
 from bs4 import BeautifulSoup
 import concurrent.futures
 
-
 class QueryResult:
     """
     Encapsulates all of the information and configs needed to process a query result and apply
     the changes back into the Anki database.
     """
-    def __self__(note_id: str, query: str, target_field: str, overwrite: bool):
-        this.note_id = note_id
-        this.query = query
-        this.target_field = target_field
-        this.overwrite = overwrite
-        this.images = []
-
+    def __self__(self, note_id: str, query: str, target_field: str, overwrite: bool):
+        self.note_id: str = note_id
+        self.query: str = query
+        self.target_field: str = target_field
+        self.overwrite: str = overwrite
+        self.images: List[Tuple[str, str]] = []
 
 def sleep(seconds):
     """
@@ -62,10 +60,8 @@ class Scraper:
         "User-Agent": "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.67 Safari/537.36"
     }
 
-    def __init__(self, executor: concurrent.futures.ThreadPoolExecutor, jobs:
-                 list, mw):
+    def __init__(self, executor: concurrent.futures.ThreadPoolExecutor, mw):
         self._executor = executor
-        self._jobs = jobs
         self._mw = mw
 
     def push_scrape_job(result: QueryResult) -> None:
@@ -90,9 +86,8 @@ class GoogleImageScraper(Scraper):
     # Number of seconds to sleep per retry on timeout error.
     TIMEOUT_SLEEP_SEC = 5
 
-    def __init__(self, executor: concurrent.futures.ThreadPoolExecutor, jobs:
-                 list, mw):
-        super(executor, jobs, mw)
+    def __init__(self, executor: concurrent.futures.ThreadPoolExecutor, mw):
+        super(executor, mw)
 
     def push_scrape_job(result: QueryResult) -> None:
         # Fire off a request to the image search page, then queue up a job to scrape
@@ -111,8 +106,7 @@ class GoogleImageScraper(Scraper):
                 future = executor.submit(
                     self._parse_and_download_images(
                         r.text), result)
-                jobs.append(future)
-                break
+                return future
             except requests.exceptions.RequestException as e:
                 if retry_count == GoogleImageScraper.MAX_RETRIES:
                     raise Exception(
