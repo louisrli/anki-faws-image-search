@@ -77,9 +77,11 @@ class Scraper:
         self._executor = executor
         self._mw = mw
 
-    def push_scrape_job(self, result: QueryResult) -> None:
+    def push_scrape_job(self, result: QueryResult):
         """
         Pushes a new job (future) into the executor using the query result.
+
+        Returns a Future.
         """
         raise Exception("Unimplemented abstract method.")
 
@@ -91,7 +93,7 @@ class BingScraper(Scraper):
     This can be refactored if we ever choose to add another source. Things such as
     retry logic can be extracted into a common class.
     """
-    SEARCH_FORMAT_URL = "https://www.google.com/search?tbm=isch&q={}&safe=active"
+    SEARCH_FORMAT_URL = "https://www.bing.com/images/async?q={}"
     TIMEOUT_SEC = 15
     MAX_RETRIES = 3
     # Number of seconds to sleep per retry on rate limit error.
@@ -105,9 +107,9 @@ class BingScraper(Scraper):
     def __init__(self, executor: concurrent.futures.ThreadPoolExecutor, mw):
         super().__init__(executor, mw)
 
-    def push_scrape_job(self, result: QueryResult) -> None:
+    def push_scrape_job(self, result: QueryResult):
         """
-     Fire off a request to the image search page, then queue up a job to scrape
+        Fire off a request to the image search page, then queue up a job to scrape
         the images from the resulting text and resize them.
         """
         # Note that the REQUEST is not
@@ -121,6 +123,7 @@ class BingScraper(Scraper):
                 req = requests.get(search_url, headers=Scraper.SPOOFED_HEADER,
                                    timeout=BingScraper.TIMEOUT_SEC)
                 req.raise_for_status()
+                print(req.text)
                 future = self._executor.submit(
                     self._parse_and_download_images, req.text, result)
                 return future
@@ -153,57 +156,64 @@ class BingScraper(Scraper):
 
         This function **mutates** `result` and also returns it.
         """
+        # Check README for why this import is here.
+        from PIL import UnidentifiedImageError
         image_urls = re.findall(BingScraper.IMAGE_URL_REGEX, html)
         num_processed = 0
         filename_img_pairs : List[Tuple[str, bytes]] = []
+        print(image_urls)
+        # TODO: good place to put debug for checking if regex fails
         for url in image_urls:
             if num_processed == result.max_results:
                 break
 
             try:
+                print("sent request %s" % url)  
                 req = requests.get(url,
                                    headers=Scraper.SPOOFED_HEADER,
                                    timeout=BingScraper.TIMEOUT_SEC)
                 req.raise_for_status()
             except requests.packages.urllib3.exceptions.LocationParseError:
+                print("location parse")
                 continue
             except requests.exceptions.RequestException:
+                print("request exception")
                 continue
 
             # Ignore SVGs. Dunno, the last guy did it too, maybe they won't work
             # with Anki.
-            if 'image/svg+xml' in r.headers.get('content-type', ''):
-                continue
-
-            is_gif = getattr(im, 'n_frames', 1) != 1
-            # GIFs can't be resized, again according to the last dude, I'll take
-            # his word for it.
-            if is_gif:
+            if 'image/svg+xml' in req.headers.get('content-type', ''):
                 continue
 
             try: 
-                buf = _maybe_resize_image(req.content)
+                buf = _maybe_resize_image(req.content, result.width,
+                                          result.height)
             except UnidentifiedImageError:
+                print("Unidentified image error.")
                 continue
             except UnicodeError as e:
+                print("unicode image error.")
                 # UnicodeError: encoding with 'idna' codec failed (UnicodeError: label empty or too long)
                 # https://bugs.python.org/issue32958
                 continue
 
+            print("made it to the end")  
             filename = checksum(url + result.query)
             filename_img_pairs.append((filename, buf.getvalue()))
             num_processed += 1
 
         result.images = filename_img_pairs
-        print("louisrli")
-        print(vars(result))
         return result
 
 
 def _maybe_resize_image(img_data: io.BytesIO, user_width: int, user_height: int) -> io.BytesIO:
-    from PIL import Image, UnidentifiedImageError
+    # Check README for why this import is here.
+    from PIL import Image
     should_resize = user_width > 0 or user_height > 0
-    if not should_resize:
+    # GIFs can't be resized, again according to the last dude, I'll take
+    # his word for it.
+    is_gif = getattr(im, 'n_frames', 1) != 1
+    if not should_resize or is_gif:
         return io.BytesIO(data)
 
     im = Image.open(io.BytesIO(data))
