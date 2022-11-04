@@ -131,6 +131,7 @@ class BingScraper(Scraper):
                     self._parse_and_download_images, req.text, result)
                 return future
             except requests.exceptions.RequestException as e:
+                logger.exception(e)
                 if retry_count == BingScraper.MAX_RETRIES:
                     raise Exception(
                         "Exceeded max retries. Unable to scrape for query: %s" %
@@ -166,7 +167,7 @@ class BingScraper(Scraper):
         from PIL import UnidentifiedImageError
         image_urls = re.findall(BingScraper.IMAGE_URL_REGEX, html)
         num_processed = 0
-        if len(image_urls):
+        if len(image_urls) == 0:
             logger.debug("Found 0 image URLs for query: %s" % result.query)
 
         for url in image_urls:

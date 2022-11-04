@@ -95,6 +95,7 @@ def scrape_images_and_update(form, note_ids, browser):
     mw.addonManager.writeConfig(__name__, new_config)
 
     browser.begin_reset()
+    mw.progress.start(immediate=True)
 
     # Begin a pool of executors. One job = one query.
     with concurrent.futures.ThreadPoolExecutor() as executor:
@@ -134,18 +135,21 @@ def scrape_images_and_update(form, note_ids, browser):
                                      width=qc[ConfigKeys.WIDTH],
                                      height=qc[ConfigKeys.HEIGHT],
                                      images=[])
+                print("Process qc: %s" % result.query)
                 jobs.append(scraper.push_scrape_job(result))
 
+                processed_notes.add(note_id)
+                label = "Processed %s notes..." % len(processed_notes)
+                mw.progress.update(label)
+
+        print("Finished appending everything, waiting for futures now...")
         for future in concurrent.futures.as_completed(jobs):
             result = future.result()
             updated_notes.append(apply_result_to_note(result))
-            processed_notes.add(note_id)
-            label = "Processed %s notes..." % len(processed_notes)
-            mw.progress.update(label)
-
     # All notes get bulk updated at the end. This should work well with undo:
     # https://forums.ankiweb.net/t/anki-2-1-45-beta/10664/121
     mw.col.update_notes(updated_notes)
+    mw.progress.finish()
 
     # No idea what this line does but the other guy had it.
     # No idea what any of this does, actually.
