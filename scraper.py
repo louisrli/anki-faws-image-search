@@ -1,5 +1,5 @@
 """
-Helper functions related to scraping images and network connection.
+Helper functions related to scraping images.
 """
 from aqt.qt import QApplication
 from bs4 import BeautifulSoup

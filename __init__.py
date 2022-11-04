@@ -8,6 +8,7 @@ from aqt import gui_hooks
 from .designer.main import Ui_Dialog
 from .ui_helpers import ConfigDefaults, ConfigKeys, COLUMN_LABELS, OverwriteValues
 from .ui_helpers import make_target_field_select, make_dimension_spin_box, make_overwrite_select, make_result_count_box, serialize_config_from_ui
+from .scraper import QueryResult
 
 def open_add_images_dialog(browser: browser.Browser) -> None:
     """
