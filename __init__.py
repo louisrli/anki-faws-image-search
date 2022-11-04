@@ -92,7 +92,6 @@ def scrape_images_and_update(form, note_ids, browser):
     mw.addonManager.writeConfig(__name__, new_config)
 
     mw.checkpoint("Add Bing Images")
-    mw.progress.start(immediate=True)
     browser.begin_reset()
 
     # Begin a pool of executors. One job = one query.
@@ -146,7 +145,6 @@ def scrape_images_and_update(form, note_ids, browser):
     QApplication.instance().processEvents()
     browser.end_reset()
     mw.requireReset()
-    mw.progress.finish()
     showInfo("Number of notes processed: %d" % len(note_ids), parent=browser)
 
 def apply_result_to_note(result: QueryResult, delimiter=" ") -> None:
