@@ -134,26 +134,12 @@ def scrape_images_and_update(form, note_ids, browser):
                                      images=[])
                 jobs.append(scraper.push_scrape_job(result))
 
-# This seems to be weird parallelism. Would prefer to scrape all first before
-# trying anything.
-#             done, not_done = concurrent.futures.wait(jobs, timeout=0)
-#             for future in done:
-#                 result = future.result()
-#                 apply_result_to_note(result)
-#                 processed_notes.add(note_id)
-#                 jobs.remove(future)
-#             else:
-#                 label = "Processed %s notes..." % len(processed_notes)
-#                 mw.progress.update(label)
-#                 QApplication.instance().processEvents()
-# 
         for future in concurrent.futures.as_completed(jobs):
             result = future.result()
             apply_result_to_note(result)
             processed_notes.add(note_id)
             label = "Processed %s notes..." % len(processed_notes)
             mw.progress.update(label)
-            QApplication.instance().processEvents()
 
     browser.end_reset()
     mw.requireReset()
@@ -171,7 +157,7 @@ def apply_result_to_note(result: QueryResult, delimiter=" ") -> None:
         return
     new_note_html = []
     for fname, data in result.images:
-        fname = mw.col.media.writeData(fname, data)
+        fname = mw.col.media.write_data(fname, data)
         filename = '<img src="%s">' % fname
         new_note_html.append(filename)
     note = mw.col.get_note(result.note_id)

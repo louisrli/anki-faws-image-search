@@ -66,14 +66,13 @@ def strip_html_clozes(w: str) -> str:
 
 class Scraper:
     # Taken from the source code of bing-image-downloader (Python)
-    SPOOFED_HEADER = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) ' 
-      'AppleWebKit/537.11 (KHTML, like Gecko) '
-      'Chrome/23.0.1271.64 Safari/537.11',
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-      'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
-      'Accept-Encoding': 'none',
-      'Accept-Language': 'en-US,en;q=0.8',
-      'Connection': 'keep-alive'}
+    # Note: It's actually really important that these headers have certain
+    # values, though I can't say what they are.
+    # https://github.com/gurugaurav/bing_image_downloader/commit/062e0f4e6ec31b0ab66ea10e0a187d1d2d80de63
+    # https://github.com/gurugaurav/bing_image_downloader/issues/19
+    # But as it turns out, using the headers from the first commit there solves
+    # the problem.
+    SPOOFED_HEADER = {'User-Agent': 'Mozilla/5.0 (X11; Fedora; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0'}
 
     def __init__(self, executor: concurrent.futures.ThreadPoolExecutor, mw):
         self._executor = executor
