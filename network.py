@@ -102,8 +102,11 @@ class BingImageScraper(Scraper):
         super(executor, mw)
 
     def push_scrape_job(self, result: QueryResult) -> None:
-        # Fire off a request to the image search page, then queue up a job to scrape
-        # the images from the resulting text. Note that the REQUEST is not
+        """
+     Fire off a request to the image search page, then queue up a job to scrape
+        the images from the resulting text and resize them.
+        """
+        # Note that the REQUEST is not
         # multithreaded, but parsing/extracting images is (disputable whether this
         # is the correct architecture, but I'm just going to copy this guy's code).
         # In case of a status exception, retry
@@ -149,6 +152,7 @@ class BingImageScraper(Scraper):
         for url in image_urls:
             if num_processed == result.max_results:
                 break
+
             try:
                 req = requests.get(url,
                                    headers=Scraper.SPOOFED_HEADER,
@@ -171,24 +175,32 @@ class BingImageScraper(Scraper):
                 continue
 
             try: 
-                buf = self._maybe_resize_image(req.content)
+                buf = _maybe_resize_image(req.content)
+            except UnidentifiedImageError:
+                continue
+            except UnicodeError as e:
+                # UnicodeError: encoding with 'idna' codec failed (UnicodeError: label empty or too long)
+                # https://bugs.python.org/issue32958
+                continue
+
             filename = checksum(url + result.query)
             filename_img_pairs.append((filename, buf.getvalue()))
             num_processed += 1
 
-    def _maybe_resize_image(self, img_data: io.BytesIO, user_width: int, user_height: int) -> io.BytesIO:
-        should_resize = user_width > 0 or user_height > 0
-        if not should_resize:
-            return io.BytesIO(data)
 
-        im = Image.open(io.BytesIO(data))
-        old_width, old_height = im.width, im.height
-        new_width, new_height = old_width, old_height
-        if user_width > 0:
-            new_width = min(new_width, user_width)
-        if user_height > 0:
-            new_height = min(new_height, user_height)
-        im.thumbnail((new_width, new_height))
-        buf = io.BytesIO()
-        im.save(buf, format=im.format, optimize=True)
-        return buf
+def _maybe_resize_image(img_data: io.BytesIO, user_width: int, user_height: int) -> io.BytesIO:
+    should_resize = user_width > 0 or user_height > 0
+    if not should_resize:
+        return io.BytesIO(data)
+
+    im = Image.open(io.BytesIO(data))
+    old_width, old_height = im.width, im.height
+    new_width, new_height = old_width, old_height
+    if user_width > 0:
+        new_width = min(new_width, user_width)
+    if user_height > 0:
+        new_height = min(new_height, user_height)
+    im.thumbnail((new_width, new_height))
+    buf = io.BytesIO()
+    im.save(buf, format=im.format, optimize=True)
+    return buf
