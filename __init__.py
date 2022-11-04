@@ -36,7 +36,7 @@ def open_add_images_dialog(browser: aqt.browser.Browser) -> None:
 
     # Using the first note in the collection, read the possible fields to
     # configure source/target fields. Set the default field from the config.
-    note_fields = mw.col.getNote(selected_notes[0]).keys()
+    note_fields = mw.col.get_note(selected_notes[0]).keys()
     form.sourceField.addItems(note_fields)
     config_src_field = config[ConfigKeys.SOURCE_FIELD]
     if config_src_field in note_fields:
@@ -103,7 +103,7 @@ def scrape_images_and_update(form, note_ids, browser):
         scraper = BingScraper(executor, mw)
 
         for c, note_id in enumerate(note_ids, 1):
-            note = mw.col.getNote(note_id)
+            note = mw.col.get_note(note_id)
             source_value = note[new_config[ConfigKeys.SOURCE_FIELD]]
 
             query_configs = new_config[ConfigKeys.QUERY_CONFIGS]
@@ -122,6 +122,9 @@ def scrape_images_and_update(form, note_ids, browser):
                     ConfigDefaults.WORD_PLACEHOLDER,
                     strip_html_clozes(source_value)
                 )
+                print(qc)
+                print(final_search_query)
+                print(strip_html_clozes(source_value))
 
                 # Here we start pushing the heavy lifting scraping jobs into the
                 # queue.
@@ -169,7 +172,7 @@ def apply_result_to_note(result: QueryResult, delimiter=" ") -> None:
         fname = mw.col.media.writeData(fname, data)
         filename = '<img src="%s">' % fname
         images_html.append(filename)
-    note = mw.col.getNote(result.note_id)
+    note = mw.col.get_note(result.note_id)
     if overwrite == OverwriteValues.APPEND:
         if note[result.target_field]:
             note[result.target_field] += delimiter
