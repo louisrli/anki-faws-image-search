@@ -4,17 +4,20 @@ Helper functions related to scraping images and network connection.
 from aqt.qt import QApplication
 from bs4 import BeautifulSoup
 import concurrent.futures
+from anki.utils import checksum
 
 class QueryResult:
     """
     Encapsulates all of the information and configs needed to process a query result and apply
     the changes back into the Anki database.
     """
-    def __self__(self, note_id: str, query: str, target_field: str, overwrite: bool):
-        self.note_id: str = note_id
-        self.query: str = query
-        self.target_field: str = target_field
-        self.overwrite: str = overwrite
+    def __self__(self, note_id: str, query: str, target_field: str, overwrite:
+                 bool, max_results: int):
+        self.note_id= note_id
+        self.query= query
+        self.target_field= target_field
+        self.overwrite= overwrite
+        self.max_results= max_results
         self.images: List[Tuple[str, str]] = []
 
 def sleep(seconds):
@@ -108,8 +111,11 @@ class BingImageScraper(Scraper):
         retry_count = 0
         while retry_count < BingImageScraper.MAX_RETRIES:
             try:
+                req = requests.get(search_url.format(query), headers=headers,
+                                   timeout=BingImageScraper.TIMEOUT_SEC)
+                req.raise_for_status()
                 future = executor.submit(
-                    self._parse_and_download_images, result)
+                    self._parse_and_download_images, r.text, result)
                 return future
             except requests.exceptions.RequestException as e:
                 if retry_count == BingImageScraper.MAX_RETRIES:
@@ -133,8 +139,55 @@ class BingImageScraper(Scraper):
                 else:
                     raise e
 
-    def _parse_and_download_images(result: QueryResult):
-        request = urllib.request.Request(URL + urllib.parse.urlencode(params), None, headers=headers)
-        response = urllib.request.urlopen(request)
-        html = response.read().decode('utf8')
-        return re.findall(BING_IMAGE_URL_REGEX, page_text)
+    def _parse_and_download_images(html: str, result: QueryResult) -> QueryResult:
+        """
+        Parses the image URLs out of the HTML. Processes and resizes them.
+        """
+        image_urls = re.findall(BING_IMAGE_URL_REGEX, html)
+        num_processed = 0
+        filename_img_pairs : List[Tuple[str, bytes]] = []
+        for url in image_urls:
+            if num_processed == result.max_results:
+                break
+            try:
+                req = requests.get(url,
+                                   headers=Scraper.SPOOFED_HEADER,
+                                   timeout=BingImageScraper.TIMEOUT_SEC)
+                req.raise_for_status()
+            except requests.packages.urllib3.exceptions.LocationParseError:
+                continue
+            except requests.exceptions.RequestException:
+                continue
+
+            # Ignore SVGs. Dunno, the last guy did it too, maybe they won't work
+            # with Anki.
+            if 'image/svg+xml' in r.headers.get('content-type', ''):
+                continue
+
+            is_gif = getattr(im, 'n_frames', 1) != 1
+            # GIFs can't be resized, again according to the last dude, I'll take
+            # his word for it.
+            if is_gif:
+                continue
+
+            buf = _maybe_resize_image(req.content)
+            filename = checksum(url + result.query)
+            filename_img_pairs.append((filename, buf.getvalue()))
+            num_processed += 1
+
+    def _maybe_resize_image(img_data: io.BytesIO, user_width: int, user_height: int) -> io.BytesIO:
+        should_resize = user_width > 0 or user_height > 0
+        if not should_resize:
+            return io.BytesIO(data)
+
+        im = Image.open(io.BytesIO(data))
+        old_width, old_height = im.width, im.height
+        new_width, new_height = old_width, old_height
+        if user_width > 0:
+            new_width = min(new_width, user_width)
+        if user_height > 0:
+            new_height = min(new_height, user_height)
+        im.thumbnail((new_width, new_height))
+        buf = io.BytesIO()
+        im.save(buf, format=im.format, optimize=True)
+        return buf

@@ -125,6 +125,7 @@ def scrape_images_and_update(form, note_ids):
                 result.query = final_search_query
                 result.target_field = target_field
                 result.overwrite = qc[ConfigKeys.OVERWRITE]
+                result.max_results = qc[ConfigKeys.RESULT_COUNT]
 
                 jobs.append(scraper.push_scrape_job(result))
 
