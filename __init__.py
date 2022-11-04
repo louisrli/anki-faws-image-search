@@ -141,6 +141,9 @@ def scrape_images_and_update(form, note_ids, browser):
             label = "Processed %s notes..." % len(processed_notes)
             mw.progress.update(label)
 
+    # No idea what this line does but the other guy had it.
+    # No idea what any of this does, actually.
+    QApplication.instance().processEvents()
     browser.end_reset()
     mw.requireReset()
     mw.progress.finish()
