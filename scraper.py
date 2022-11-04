@@ -11,6 +11,7 @@ import concurrent.futures
 from anki.utils import checksum
 from .logging import logger
 
+
 class QueryResult(NamedTuple):
     """
     Encapsulates all of the information and configs needed to process a query result and apply
@@ -25,6 +26,7 @@ class QueryResult(NamedTuple):
     height: int
     # (filename, image data)
     images: List[Tuple[str, bytes]]
+
 
 def sleep(seconds):
     """
@@ -72,7 +74,8 @@ class Scraper:
     # https://github.com/gurugaurav/bing_image_downloader/issues/19
     # But as it turns out, using the headers from the first commit there solves
     # the problem.
-    SPOOFED_HEADER = {'User-Agent': 'Mozilla/5.0 (X11; Fedora; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0'}
+    SPOOFED_HEADER = {
+        'User-Agent': 'Mozilla/5.0 (X11; Fedora; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0'}
 
     def __init__(self, executor: concurrent.futures.ThreadPoolExecutor, mw):
         self._executor = executor
@@ -150,7 +153,10 @@ class BingScraper(Scraper):
                 else:
                     raise e
 
-    def _parse_and_download_images(self, html: str, result: QueryResult) -> QueryResult:
+    def _parse_and_download_images(
+            self,
+            html: str,
+            result: QueryResult) -> QueryResult:
         """
         Parses the image URLs out of the HTML. Processes and resizes them.
 
@@ -182,7 +188,7 @@ class BingScraper(Scraper):
             if 'image/svg+xml' in req.headers.get('content-type', ''):
                 continue
 
-            try: 
+            try:
                 buf = _maybe_resize_image(req.content, result.width,
                                           result.height)
             except UnidentifiedImageError:
@@ -199,7 +205,10 @@ class BingScraper(Scraper):
         return result
 
 
-def _maybe_resize_image(img_data: io.BytesIO, user_width: int, user_height: int) -> io.BytesIO:
+def _maybe_resize_image(
+        img_data: io.BytesIO,
+        user_width: int,
+        user_height: int) -> io.BytesIO:
     # Check README for why this import is here.
     from PIL import Image
 

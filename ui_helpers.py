@@ -1,5 +1,6 @@
 from aqt.qt import *
 
+
 class OverwriteValues:
     """
     Possible values for the overwrite config.
@@ -7,6 +8,7 @@ class OverwriteValues:
     OVERWRITE = "Overwrite"
     SKIP = "Skip"
     APPEND = "Append"
+
 
 class ConfigKeys:
     """
@@ -23,12 +25,13 @@ class ConfigKeys:
     HEIGHT = "height"
     OVERWRITE = "overwrite"
 
+
 # The order in which the keys appear as columns in the query config form.
 #
 # This is an extremely unideal way to do this (hacky) but basing on the legacy
 # code: to extract the values from the form later, we need to know what order
 # the columns appear.
-# TODO: Add some assertions to check this. 
+# TODO: Add some assertions to check this.
 QUERY_CONFIG_KEY_ORDER = (
     ConfigKeys.LABEL,
     ConfigKeys.SEARCH_TERM,
@@ -37,7 +40,7 @@ QUERY_CONFIG_KEY_ORDER = (
     ConfigKeys.OVERWRITE,
     ConfigKeys.WIDTH,
     ConfigKeys.HEIGHT)
-        
+
 
 class ConfigDefaults:
     RESULT_COUNT = 1
@@ -48,6 +51,7 @@ class ConfigDefaults:
     # The placeholder value in the search term the user provides.
     WORD_PLACEHOLDER = "{}"
 
+
 COLUMN_LABELS = [
     "Label",
     "Search Query",
@@ -56,6 +60,7 @@ COLUMN_LABELS = [
     "If not empty?",
     "",
     ""]
+
 
 def make_target_field_select(options, config_value) -> QComboBox:
     """
@@ -105,7 +110,8 @@ def make_dimension_spin_box(config_value, label) -> QHBoxLayout:
     spinBox.setMinimum(-1)
     spinBox.setMaximum(9999)
     spinBox.setValue(config_value)
-    spinBox.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+    spinBox.setAlignment(Qt.AlignmentFlag.AlignRight |
+                         Qt.AlignmentFlag.AlignVCenter)
     hbox.addWidget(spinBox)
     return hbox
 
@@ -123,7 +129,7 @@ def serialize_config_from_ui(form):
 
     query_configs = []
     num_ui_columns = form.gridLayout.columnCount()
-    assert(num_ui_columns == len(QUERY_CONFIG_KEY_ORDER))
+    assert (num_ui_columns == len(QUERY_CONFIG_KEY_ORDER))
     for i in range(1, form.gridLayout.rowCount()):
         q = {}
         # Well, in general this approach is highly coupled with the UI, but I'm
@@ -146,4 +152,3 @@ def serialize_config_from_ui(form):
         query_configs.append(q)
     config[ConfigKeys.QUERY_CONFIGS] = query_configs
     return config
-

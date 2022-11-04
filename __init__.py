@@ -10,11 +10,12 @@ import sys
 
 # See main.ui
 from .designer.main import Ui_Dialog
-from .ui_helpers import ConfigDefaults, ConfigKeys, COLUMN_LABELS, OverwriteValues 
+from .ui_helpers import ConfigDefaults, ConfigKeys, COLUMN_LABELS, OverwriteValues
 from .ui_helpers import make_target_field_select, make_dimension_spin_box, make_overwrite_select, make_result_count_box, serialize_config_from_ui
 from .scraper import QueryResult, BingScraper, strip_html_clozes
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "vendor"))
+
 
 def open_add_images_dialog(browser: aqt.browser.Browser) -> None:
     """
@@ -71,7 +72,8 @@ def open_add_images_dialog(browser: aqt.browser.Browser) -> None:
         form.gridLayout.addWidget(make_target_field_select(note_fields,
                                                            target_field),
                                   row_idx, 2)
-        form.gridLayout.addWidget(make_result_count_box(result_count), row_idx, 3)
+        form.gridLayout.addWidget(
+            make_result_count_box(result_count), row_idx, 3)
         form.gridLayout.addWidget(make_overwrite_select(overwrite), row_idx, 4)
         form.gridLayout.addLayout(make_dimension_spin_box(width, "Width"),
                                   row_idx, 5)
@@ -82,6 +84,7 @@ def open_add_images_dialog(browser: aqt.browser.Browser) -> None:
     if not dialog.exec():
         return
     scrape_images_and_update(form, selected_notes, browser)
+
 
 def scrape_images_and_update(form, note_ids, browser):
     """
@@ -98,7 +101,7 @@ def scrape_images_and_update(form, note_ids, browser):
         jobs = []
         processed_notes = set()
         scraper = BingScraper(executor, mw)
-        updated_notes : List[Note] = []
+        updated_notes: List[Note] = []
 
         for c, note_id in enumerate(note_ids, 1):
             note = mw.col.get_note(note_id)
@@ -125,7 +128,7 @@ def scrape_images_and_update(form, note_ids, browser):
                 # queue.
                 result = QueryResult(note_id=note_id,
                                      query=final_search_query,
-                                     target_field=target_field, 
+                                     target_field=target_field,
                                      overwrite=qc[ConfigKeys.OVERWRITE],
                                      max_results=qc[ConfigKeys.RESULT_COUNT],
                                      width=qc[ConfigKeys.WIDTH],
@@ -151,6 +154,7 @@ def scrape_images_and_update(form, note_ids, browser):
     mw.requireReset()
     showInfo("Number of notes processed: %d" % len(note_ids), parent=browser)
 
+
 def apply_result_to_note(result: QueryResult, delimiter=" ") -> Note:
     """
     Given a QueryResult, mutates a note using the information in the result.
@@ -169,7 +173,7 @@ def apply_result_to_note(result: QueryResult, delimiter=" ") -> Note:
         new_note_html.append(filename)
     note = mw.col.get_note(result.note_id)
 
-    assert(result.overwrite != OverwriteValues.SKIP)
+    assert (result.overwrite != OverwriteValues.SKIP)
     if result.overwrite == OverwriteValues.APPEND:
         if note[result.target_field]:
             note[result.target_field] += delimiter
@@ -178,13 +182,15 @@ def apply_result_to_note(result: QueryResult, delimiter=" ") -> Note:
         note[result.target_field] = delimiter.join(new_note_html)
     return note
 
+
 def setup_menu(browser: aqt.browser.Browser) -> None:
     """
     Adds the button to add images on init of the card browser.
     """
     menu = browser.form.menuEdit
     menu.addSeparator()
-    new_action = menu.addAction('FawsImageSearch: Add images to the selected cards')
+    new_action = menu.addAction(
+        'FawsImageSearch: Add images to the selected cards')
     new_action.triggered.connect(
         lambda _, b=browser: open_add_images_dialog(b))
 
