@@ -2,6 +2,9 @@
 Helper functions related to scraping images.
 """
 from aqt.qt import QApplication
+import io
+import re
+import requests
 from bs4 import BeautifulSoup
 import concurrent.futures
 from anki.utils import checksum
@@ -11,15 +14,15 @@ class QueryResult:
     Encapsulates all of the information and configs needed to process a query result and apply
     the changes back into the Anki database.
     """
-    def __self__(self, note_id: str, query: str, target_field: str, overwrite:
+    def __init__(self, note_id: str, query: str, target_field: str, overwrite:
                  bool, max_results: int):
         self.note_id= note_id
         self.query= query
         self.target_field= target_field
         self.overwrite= overwrite
-        self.max_results= max_results
+        self.max_results = max_results
         # (filename, image data)
-        self.images: List[Tuple[str, bytes]] = []
+        self.images : List[Tuple[str, bytes]] = []
 
 def sleep(seconds):
     """
@@ -81,7 +84,7 @@ class Scraper:
         raise Exception("Unimplemented abstract method.")
 
 
-class BingImageScraper(Scraper):
+class BingScraper(Scraper):
     """
     A scraper that targets Bing Images.
 
@@ -97,10 +100,10 @@ class BingImageScraper(Scraper):
     TIMEOUT_SLEEP_SEC = 5
 
     # Taken from bing-image-downloader
-    BING_IMAGE_URL_REGEX = 'murl&quot;:&quot;(.*?)&quot;'
+    IMAGE_URL_REGEX = 'murl&quot;:&quot;(.*?)&quot;'
 
     def __init__(self, executor: concurrent.futures.ThreadPoolExecutor, mw):
-        super(executor, mw)
+        super().__init__(executor, mw)
 
     def push_scrape_job(self, result: QueryResult) -> None:
         """
@@ -111,35 +114,36 @@ class BingImageScraper(Scraper):
         # multithreaded, but parsing/extracting images is (disputable whether this
         # is the correct architecture, but I'm just going to copy this guy's code).
         # In case of a status exception, retry
-        search_url = BingImageScraper.SEARCH_FORMAT_URL.format(result.query)
+        search_url = BingScraper.SEARCH_FORMAT_URL.format(result.query)
         retry_count = 0
-        while retry_count < BingImageScraper.MAX_RETRIES:
+        while retry_count < BingScraper.MAX_RETRIES:
             try:
-                req = requests.get(search_url.format(query), headers=headers,
-                                   timeout=BingImageScraper.TIMEOUT_SEC)
+                req = requests.get(search_url, headers=Scraper.SPOOFED_HEADER,
+                                   timeout=BingScraper.TIMEOUT_SEC)
                 req.raise_for_status()
-                future = executor.submit(
-                    self._parse_and_download_images, r.text, result)
+                future = self._executor.submit(
+                    self._parse_and_download_images, req.text, result)
                 return future
             except requests.exceptions.RequestException as e:
-                if retry_count == BingImageScraper.MAX_RETRIES:
+                if retry_count == BingScraper.MAX_RETRIES:
                     raise Exception(
                         "Exceeded max retries. Unable to scrape for query: %s" %
                         result.query)
                 retry_count += 1
+
                 if isinstance(
                         e, requests.exceptions.HTTPError) and e.response.status_code == 429:
                     # Retry on 429: we were rate limited
                     self._mw.progress.update(
                         f"Sleeping for {retry_cnt * 30} seconds...")
                     QApplication.instance().processEvents()
-                    sleep(retry_cnt * BingImageScraper.THROTTLE_SLEEP_SEC)
+                    sleep(retry_cnt * BingScraper.THROTTLE_SLEEP_SEC)
                 elif isinstance(e, (requests.exceptions.ReadTimeout, requests.exceptions.ConnectionError)):
                     # Connection error
                     self._mw.progress.update(
                         f"Sleeping for {retry_cnt * 5} seconds...")
                     QApplication.instance().processEvents()
-                    sleep(retry_cnt * BingImageScraper.TIMEOUT_SLEEP_SEC)
+                    sleep(retry_cnt * BingScraper.TIMEOUT_SLEEP_SEC)
                 else:
                     raise e
 
@@ -149,7 +153,7 @@ class BingImageScraper(Scraper):
 
         This function **mutates** `result` and also returns it.
         """
-        image_urls = re.findall(BING_IMAGE_URL_REGEX, html)
+        image_urls = re.findall(BingScraper.IMAGE_URL_REGEX, html)
         num_processed = 0
         filename_img_pairs : List[Tuple[str, bytes]] = []
         for url in image_urls:
@@ -159,7 +163,7 @@ class BingImageScraper(Scraper):
             try:
                 req = requests.get(url,
                                    headers=Scraper.SPOOFED_HEADER,
-                                   timeout=BingImageScraper.TIMEOUT_SEC)
+                                   timeout=BingScraper.TIMEOUT_SEC)
                 req.raise_for_status()
             except requests.packages.urllib3.exceptions.LocationParseError:
                 continue
@@ -189,11 +193,15 @@ class BingImageScraper(Scraper):
             filename = checksum(url + result.query)
             filename_img_pairs.append((filename, buf.getvalue()))
             num_processed += 1
-            result.images = filename_img_pairs
-            return result
+
+        result.images = filename_img_pairs
+        print("louisrli")
+        print(vars(result))
+        return result
 
 
 def _maybe_resize_image(img_data: io.BytesIO, user_width: int, user_height: int) -> io.BytesIO:
+    from PIL import Image, UnidentifiedImageError
     should_resize = user_width > 0 or user_height > 0
     if not should_resize:
         return io.BytesIO(data)

@@ -3,6 +3,17 @@
 This is an Anki add-on to download images from image search, such as Bing,
 Google Images, etc. Currently, it works only with Bing Images.
 
+## Installation
+
+## Installation from source
+
+See [this
+thread](https://forums.ankiweb.net/t/add-support-for-dependencies-in-addons/24302/2)
+
+```
+pip3 install Pillow -t vendor
+```
+
 ## Report a bug
 Bugs can be reported either by filing an issue or contacting me at the email on my Github.
 

@@ -1,16 +1,21 @@
-from aqt import mw, browser
+import aqt
+from aqt import mw
 from aqt.utils import showInfo, qconnect
+import concurrent
 # TODO(louisli): Try not to * import
 from aqt.qt import *
 from aqt import gui_hooks
+import sys
 
 # See main.ui
 from .designer.main import Ui_Dialog
-from .ui_helpers import ConfigDefaults, ConfigKeys, COLUMN_LABELS, OverwriteValues
+from .ui_helpers import ConfigDefaults, ConfigKeys, COLUMN_LABELS, OverwriteValues 
 from .ui_helpers import make_target_field_select, make_dimension_spin_box, make_overwrite_select, make_result_count_box, serialize_config_from_ui
-from .scraper import QueryResult
+from .scraper import QueryResult, BingScraper, strip_html_clozes
 
-def open_add_images_dialog(browser: browser.Browser) -> None:
+sys.path.append(os.path.join(os.path.dirname(__file__), "vendor"))
+
+def open_add_images_dialog(browser: aqt.browser.Browser) -> None:
     """
     Triggered after selecting notes in the browser and clicking "add"
 
@@ -75,9 +80,9 @@ def open_add_images_dialog(browser: browser.Browser) -> None:
     # TODO: document this
     if not dialog.exec_():
         return
-    scrape_images_and_update(form, selected_notes)
+    scrape_images_and_update(form, selected_notes, browser)
 
-def scrape_images_and_update(form, note_ids):
+def scrape_images_and_update(form, note_ids, browser):
     """
     Main entry point for logic that runs after the start button is pressed.
     """
@@ -88,15 +93,14 @@ def scrape_images_and_update(form, note_ids):
     print(new_config)
 
     mw.checkpoint("Add Bing Images")
-    return
     mw.progress.start(immediate=True)
-    browser.model.beginReset()
+    browser.begin_reset()
 
     # Begin a pool of executors. One job = one query.
     with concurrent.futures.ThreadPoolExecutor() as executor:
         jobs = []
         processed_notes = set()
-        scraper = BingImageScraper(executor, jobs, mw)
+        scraper = BingScraper(executor, mw)
 
         for c, note_id in enumerate(note_ids, 1):
             note = mw.col.getNote(note_id)
@@ -121,13 +125,8 @@ def scrape_images_and_update(form, note_ids):
 
                 # Here we start pushing the heavy lifting scraping jobs into the
                 # queue.
-                result = QueryResult()
-                result.note_id = note_id
-                result.query = final_search_query
-                result.target_field = target_field
-                result.overwrite = qc[ConfigKeys.OVERWRITE]
-                result.max_results = qc[ConfigKeys.RESULT_COUNT]
-
+                result = QueryResult(note_id, final_search_query, target_field, 
+                qc[ConfigKeys.OVERWRITE], qc[ConfigKeys.RESULT_COUNT])
                 jobs.append(scraper.push_scrape_job(result))
 
 # This seems to be weird parallelism. Would prefer to scrape all first before
@@ -151,7 +150,7 @@ def scrape_images_and_update(form, note_ids):
             mw.progress.update(label)
             QApplication.instance().processEvents()
 
-    browser.model.endReset()
+    browser.end_reset()
     mw.requireReset()
     mw.progress.finish()
     showInfo("Number of notes processed: %d" % len(note_ids), parent=browser)
@@ -179,7 +178,7 @@ def apply_result_to_note(result: QueryResult, delimiter=" ") -> None:
         note[result.target_field] = delimiter.join(images_html)
     note.flush()
 
-def setup_menu(browser: browser.Browser) -> None:
+def setup_menu(browser: aqt.browser.Browser) -> None:
     """
     Adds the button to add images on init of the card browser.
     """
