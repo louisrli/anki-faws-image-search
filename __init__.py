@@ -122,14 +122,17 @@ def scrape_images_and_update(form, note_ids, browser):
                     ConfigDefaults.WORD_PLACEHOLDER,
                     strip_html_clozes(source_value)
                 )
-                print(qc)
-                print(final_search_query)
-                print(strip_html_clozes(source_value))
 
                 # Here we start pushing the heavy lifting scraping jobs into the
                 # queue.
-                result = QueryResult(note_id, final_search_query, target_field, 
-                qc[ConfigKeys.OVERWRITE], qc[ConfigKeys.RESULT_COUNT])
+                result = QueryResult(note_id=note_id,
+                                     query=final_search_query,
+                                     target_field=target_field, 
+                                     overwrite=qc[ConfigKeys.OVERWRITE],
+                                     max_results=qc[ConfigKeys.RESULT_COUNT],
+                                     width=qc[ConfigKeys.WIDTH],
+                                     height=qc[ConfigKeys.HEIGHT],
+                                     images=[])
                 jobs.append(scraper.push_scrape_job(result))
 
 # This seems to be weird parallelism. Would prefer to scrape all first before
@@ -167,18 +170,20 @@ def apply_result_to_note(result: QueryResult, delimiter=" ") -> None:
     """
     if not result.images:
         return
-    images_html = []
-    for fname, data in images:
+    new_note_html = []
+    for fname, data in result.images:
         fname = mw.col.media.writeData(fname, data)
         filename = '<img src="%s">' % fname
-        images_html.append(filename)
+        new_note_html.append(filename)
     note = mw.col.get_note(result.note_id)
-    if overwrite == OverwriteValues.APPEND:
+
+    assert(result.overwrite != OverwriteValues.SKIP)
+    if result.overwrite == OverwriteValues.APPEND:
         if note[result.target_field]:
             note[result.target_field] += delimiter
-        note[result.target_field] += delimiter.join(images_html)
+        note[result.target_field] += delimiter.join(new_note_html)
     else:
-        note[result.target_field] = delimiter.join(images_html)
+        note[result.target_field] = delimiter.join(new_note_html)
     note.flush()
 
 def setup_menu(browser: aqt.browser.Browser) -> None:

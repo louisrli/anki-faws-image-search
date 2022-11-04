@@ -2,6 +2,7 @@
 Helper functions related to scraping images.
 """
 from aqt.qt import QApplication
+from typing import NamedTuple, List, Tuple
 import io
 import re
 import requests
@@ -9,20 +10,20 @@ from bs4 import BeautifulSoup
 import concurrent.futures
 from anki.utils import checksum
 
-class QueryResult:
+class QueryResult(NamedTuple):
     """
     Encapsulates all of the information and configs needed to process a query result and apply
     the changes back into the Anki database.
     """
-    def __init__(self, note_id: str, query: str, target_field: str, overwrite:
-                 bool, max_results: int):
-        self.note_id= note_id
-        self.query= query
-        self.target_field= target_field
-        self.overwrite= overwrite
-        self.max_results = max_results
-        # (filename, image data)
-        self.images : List[Tuple[str, bytes]] = []
+    note_id: str
+    query: str
+    target_field: str
+    overwrite: str
+    max_results: int
+    width: int
+    height: int
+    # (filename, image data)
+    images: List[Tuple[str, bytes]]
 
 def sleep(seconds):
     """
@@ -160,7 +161,6 @@ class BingScraper(Scraper):
         from PIL import UnidentifiedImageError
         image_urls = re.findall(BingScraper.IMAGE_URL_REGEX, html)
         num_processed = 0
-        filename_img_pairs : List[Tuple[str, bytes]] = []
         print(image_urls)
         # TODO: good place to put debug for checking if regex fails
         for url in image_urls:
@@ -197,26 +197,27 @@ class BingScraper(Scraper):
                 # https://bugs.python.org/issue32958
                 continue
 
-            print("made it to the end")  
             filename = checksum(url + result.query)
-            filename_img_pairs.append((filename, buf.getvalue()))
+            result.images.append((filename, buf.getvalue()))
             num_processed += 1
 
-        result.images = filename_img_pairs
         return result
 
 
 def _maybe_resize_image(img_data: io.BytesIO, user_width: int, user_height: int) -> io.BytesIO:
     # Check README for why this import is here.
     from PIL import Image
+
     should_resize = user_width > 0 or user_height > 0
+
     # GIFs can't be resized, again according to the last dude, I'll take
     # his word for it.
+    img_io = io.BytesIO(img_data)
+    im = Image.open(img_io)
     is_gif = getattr(im, 'n_frames', 1) != 1
     if not should_resize or is_gif:
-        return io.BytesIO(data)
+        return img_io
 
-    im = Image.open(io.BytesIO(data))
     old_width, old_height = im.width, im.height
     new_width, new_height = old_width, old_height
     if user_width > 0:
