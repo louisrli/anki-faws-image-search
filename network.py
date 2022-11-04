@@ -18,7 +18,8 @@ class QueryResult:
         self.target_field= target_field
         self.overwrite= overwrite
         self.max_results= max_results
-        self.images: List[Tuple[str, str]] = []
+        # (filename, image data)
+        self.images: List[Tuple[str, bytes]] = []
 
 def sleep(seconds):
     """
@@ -145,6 +146,8 @@ class BingImageScraper(Scraper):
     def _parse_and_download_images(self, html: str, result: QueryResult) -> QueryResult:
         """
         Parses the image URLs out of the HTML. Processes and resizes them.
+
+        This function **mutates** `result` and also returns it.
         """
         image_urls = re.findall(BING_IMAGE_URL_REGEX, html)
         num_processed = 0
@@ -186,6 +189,8 @@ class BingImageScraper(Scraper):
             filename = checksum(url + result.query)
             filename_img_pairs.append((filename, buf.getvalue()))
             num_processed += 1
+            result.images = filename_img_pairs
+            return result
 
 
 def _maybe_resize_image(img_data: io.BytesIO, user_width: int, user_height: int) -> io.BytesIO:

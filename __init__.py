@@ -155,9 +155,12 @@ def scrape_images_and_update(form, note_ids):
     mw.progress.finish()
     showInfo("Number of notes processed: %d" % len(note_ids), parent=browser)
 
-def apply_result_to_note(result: QueryResult) -> None:
+def apply_result_to_note(result: QueryResult, delimiter=" ") -> None:
     """
     Given a QueryResult, mutates a note using the information in the result.
+
+    `delimiter` was a param in the old codebase, not really configurable for
+    now.
     """
     if not result.images:
         return
@@ -167,8 +170,6 @@ def apply_result_to_note(result: QueryResult) -> None:
         filename = '<img src="%s">' % fname
         images_html.append(filename)
     note = mw.col.getNote(result.note_id)
-    # TODO: Make this delimiter a constant
-    delimiter = " "
     if overwrite == OverwriteValues.APPEND:
         if note[result.target_field]:
             note[result.target_field] += delimiter
