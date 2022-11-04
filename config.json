@@ -9,7 +9,7 @@
 			"resultCount": 1,
 			"width": -1,
 			"height": 260,
-			"overwrite": "OVERWRITE"
+			"overwrite": "Skip"
 		},
 		{
 			"label": "Definition",
@@ -18,7 +18,7 @@
 			"resultCount": 1,
 			"width": -1,
 			"height": 260,
-			"overwrite": "SKIP"
+			"overwrite": "Skip"
 		},
 		{
 			"label": "Giphy",
@@ -27,7 +27,7 @@
 			"resultCount": 1,
 			"width": -1,
 			"height": 260,
-			"overwrite": "SKIP"
+			"overwrite": "Skip"
 		},
 		{
 			"label": "Wikipedia",
@@ -36,7 +36,7 @@
 			"resultCount": 1,
 			"width": -1,
 			"height": 260,
-			"overwrite": "SKIP"
+			"overwrite": "Skip"
 		},
 		{
 			"label": "Wikimedia",
@@ -45,7 +45,7 @@
 			"resultCount": 1,
 			"width": -1,
 			"height": 260,
-			"overwrite": "SKIP"
+			"overwrite": "Skip"
 		},
 		{
 			"label": "Meme",
@@ -54,7 +54,7 @@
 			"resultCount": 1,
 			"width": -1,
 			"height": 260,
-			"overwrite": "SKIP"
+			"overwrite": "Skip"
 		},
 		{
 			"label": "Getty Images",
@@ -63,7 +63,7 @@
 			"resultCount": 1,
 			"width": -1,
 			"height": 260,
-			"overwrite": "SKIP"
+			"overwrite": "Skip"
 		},
 		{
 			"label": "Shutterstock",
@@ -72,7 +72,7 @@
 			"resultCount": 1,
 			"width": -1,
 			"height": 260,
-			"overwrite": "SKIP"
+			"overwrite": "Skip"
 		}
 	]
 }
