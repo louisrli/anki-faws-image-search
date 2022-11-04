@@ -86,7 +86,7 @@ def scrape_images_and_update(form, note_ids):
     mw.addonManager.writeConfig(__name__, new_config)
     print(new_config)
 
-    mw.checkpoint("Add Google Images")
+    mw.checkpoint("Add Bing Images")
     return
     mw.progress.start(immediate=True)
     browser.model.beginReset()
@@ -95,7 +95,7 @@ def scrape_images_and_update(form, note_ids):
     with concurrent.futures.ThreadPoolExecutor() as executor:
         jobs = []
         processed_notes = set()
-        scraper = GoogleImageScraper(executor, jobs, mw)
+        scraper = BingImageScraper(executor, jobs, mw)
 
         for c, note_id in enumerate(note_ids, 1):
             note = mw.col.getNote(note_id)

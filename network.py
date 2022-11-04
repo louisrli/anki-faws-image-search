@@ -56,9 +56,15 @@ def strip_html_clozes(w: str) -> str:
 
 
 class Scraper:
-    SPOOFED_HEADER = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.67 Safari/537.36"
-    }
+    # Taken from the source code of bing-image-downloader (Python)
+    SPOOFED_HEADER = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) ' 
+      'AppleWebKit/537.11 (KHTML, like Gecko) '
+      'Chrome/23.0.1271.64 Safari/537.11',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
+      'Accept-Encoding': 'none',
+      'Accept-Language': 'en-US,en;q=0.8',
+      'Connection': 'keep-alive'}
 
     def __init__(self, executor: concurrent.futures.ThreadPoolExecutor, mw):
         self._executor = executor
@@ -71,9 +77,9 @@ class Scraper:
         raise Exception("Unimplemented abstract method.")
 
 
-class GoogleImageScraper(Scraper):
+class BingImageScraper(Scraper):
     """
-    A scraper that targets Google Images.
+    A scraper that targets Bing Images.
 
     This can be refactored if we ever choose to add another source. Things such as
     retry logic can be extracted into a common class.
@@ -86,6 +92,9 @@ class GoogleImageScraper(Scraper):
     # Number of seconds to sleep per retry on timeout error.
     TIMEOUT_SLEEP_SEC = 5
 
+    # Taken from bing-image-downloader
+    BING_IMAGE_URL_REGEX = 'murl&quot;:&quot;(.*?)&quot;'
+
     def __init__(self, executor: concurrent.futures.ThreadPoolExecutor, mw):
         super(executor, mw)
 
@@ -95,20 +104,15 @@ class GoogleImageScraper(Scraper):
         # multithreaded, but parsing/extracting images is (disputable whether this
         # is the correct architecture, but I'm just going to copy this guy's code).
         # In case of a status exception, retry
-        search_url = GoogleImageScraper.SEARCH_FORMAT_URL.format(result.query)
+        search_url = BingImageScraper.SEARCH_FORMAT_URL.format(result.query)
         retry_count = 0
-        while retry_count < GoogleImageScraper.MAX_RETRIES:
+        while retry_count < BingImageScraper.MAX_RETRIES:
             try:
-                request = requests.get(
-                    headers=Scraper.SPOOFED_HEADER, cookies={
-                        "CONSENT": "YES+"}, timeout=TIMEOUT_SEC)
-                r.raise_for_status()
                 future = executor.submit(
-                    self._parse_and_download_images(
-                        r.text), result)
+                    self._parse_and_download_images, result)
                 return future
             except requests.exceptions.RequestException as e:
-                if retry_count == GoogleImageScraper.MAX_RETRIES:
+                if retry_count == BingImageScraper.MAX_RETRIES:
                     raise Exception(
                         "Exceeded max retries. Unable to scrape for query: %s" %
                         result.query)
@@ -119,129 +123,18 @@ class GoogleImageScraper(Scraper):
                     self._mw.progress.update(
                         f"Sleeping for {retry_cnt * 30} seconds...")
                     QApplication.instance().processEvents()
-                    sleep(retry_cnt * GoogleImageScraper.THROTTLE_SLEEP_SEC)
+                    sleep(retry_cnt * BingImageScraper.THROTTLE_SLEEP_SEC)
                 elif isinstance(e, (requests.exceptions.ReadTimeout, requests.exceptions.ConnectionError)):
                     # Connection error
                     self._mw.progress.update(
                         f"Sleeping for {retry_cnt * 5} seconds...")
                     QApplication.instance().processEvents()
-                    sleep(retry_cnt * GoogleImageScraper.TIMEOUT_SLEEP_SEC)
+                    sleep(retry_cnt * BingImageScraper.TIMEOUT_SLEEP_SEC)
                 else:
                     raise e
 
-    def _parse_and_download_images(page_text: str, result: QueryResult):
-        """
-        Function that actually does the scraping of the HTML and so on to find
-        images.
-        """
-        return result
-
-
-def getImages(nid, fld, html, img_width, img_height, img_count, fld_overwrite):
-    soup = BeautifulSoup(html, "html.parser")
-    rg_meta = soup.find_all("div", {"class": "rg_meta"})
-    metadata = [json.loads(e.text) for e in rg_meta]
-    results = [d["ou"] for d in metadata]
-
-    if not results:
-        regex = re.escape("AF_initDataCallback({")
-        regex += r'[^<]*?data:[^<]*?' + r'(\[[^<]+\])'
-
-        for txt in re.findall(regex, html):
-            data = json.loads(txt)
-
-            try:
-                for d in data[31][0][12][2]:
-                    try:
-                        results.append(d[1][3][0])
-                    except Exception as e:
-                        pass
-            except Exception as e:
-                pass
-
-        if not results:
-            try:
-                for d in data[56][1][0][0][1][0]:
-                    try:
-                        d = d[0][0]["444383007"]
-                        results.append(d[1][3][0])
-                    except BaseException:
-                        pass
-            except BaseException:
-                pass
-
-    cnt = 0
-    images = []
-    for url in results:
-        try:
-            r = requests.get(url, headers=headers, timeout=15)
-            r.raise_for_status()
-            data = r.content
-            if 'text/html' in r.headers.get('content-type', ''):
-                continue
-            if 'image/svg+xml' in r.headers.get('content-type', ''):
-                continue
-            url = re.sub(r"\?.*?$", "", url)
-            path = urllib.parse.unquote(url)
-            fname = os.path.basename(path)
-            if not fname:
-                fname = checksum(data)
-            im = Image.open(io.BytesIO(data))
-            if img_width > 0 or img_height > 0:
-                width, height = im.width, im.height
-                if img_width > 0:
-                    width = min(width, img_width)
-                if img_height > 0:
-                    height = min(height, img_height)
-                buf = io.BytesIO()
-                if getattr(im, 'n_frames', 1) == 1:
-                    im.thumbnail((width, height))
-                    im.save(buf, format=im.format, optimize=True)
-                elif mpv_executable:
-                    thread_id = threading.get_native_id()
-                    tmp_path = tmpfile(suffix='.{}'.format(thread_id))
-                    with open(tmp_path, 'wb') as f:
-                        f.write(data)
-                    img_fmt = im.format.lower()
-                    img_ext = '.' + img_fmt
-                    img_path = tmpfile(suffix=img_ext)
-                    cmd = [
-                        mpv_executable,
-                        tmp_path,
-                        "-vf",
-                        "lavfi=[scale='min({},iw)':'min({},ih)':force_original_aspect_ratio=decrease:flags=lanczos]".format(
-                            img_width,
-                            img_height),
-                        "-o",
-                        img_path]
-                    with noBundledLibs():
-                        p = subprocess.Popen(
-                            cmd,
-                            startupinfo=si,
-                            stdin=subprocess.PIPE,
-                            stdout=subprocess.DEVNULL,
-                            stderr=subprocess.DEVNULL,
-                            env=env)
-                    if p.wait() == 0:
-                        with open(img_path, 'rb') as f:
-                            buf.write(f.read())
-                else:
-                    buf = io.BytesIO(data)
-                data = buf.getvalue()
-            images.append((fname, data))
-            cnt += 1
-            if cnt == img_count:
-                break
-        except requests.packages.urllib3.exceptions.LocationParseError:
-            pass
-        except requests.exceptions.RequestException:
-            pass
-        except UnidentifiedImageError:
-            pass
-        except UnicodeError as e:
-            # UnicodeError: encoding with 'idna' codec failed (UnicodeError: label empty or too long)
-            # https://bugs.python.org/issue32958
-            if str(
-                    e) != "encoding with 'idna' codec failed (UnicodeError: label empty or too long)":
-                raise
-    return (nid, fld, images, fld_overwrite)
+    def _parse_and_download_images(result: QueryResult):
+        request = urllib.request.Request(URL + urllib.parse.urlencode(params), None, headers=headers)
+        response = urllib.request.urlopen(request)
+        html = response.read().decode('utf8')
+        return re.findall(BING_IMAGE_URL_REGEX, page_text)
