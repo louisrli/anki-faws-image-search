@@ -54,11 +54,14 @@ If the site being scraped eventually changes their format, I definitely don't wa
 ## Installation from source
 
 See [this
-thread](https://forums.ankiweb.net/t/add-support-for-dependencies-in-addons/24302/2)
+thread](https://forums.ankiweb.net/t/add-support-for-dependencies-in-addons/24302/2).
 
 ```
 pip3 install Pillow -t vendor
 ```
+
+After that, move this directory to the Anki add-ons folder. This is covered in
+the official documentation.
 
 ## Report a bug
 Bugs can be reported either by filing an issue or contacting me at the email on my Github.
