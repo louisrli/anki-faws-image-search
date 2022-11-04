@@ -135,14 +135,12 @@ def scrape_images_and_update(form, note_ids, browser):
                                      width=qc[ConfigKeys.WIDTH],
                                      height=qc[ConfigKeys.HEIGHT],
                                      images=[])
-                print("Process qc: %s" % result.query)
                 jobs.append(scraper.push_scrape_job(result))
 
                 processed_notes.add(note_id)
                 label = "Processed %s notes..." % len(processed_notes)
                 mw.progress.update(label)
 
-        print("Finished appending everything, waiting for futures now...")
         for future in concurrent.futures.as_completed(jobs):
             result = future.result()
             updated_notes.append(apply_result_to_note(result))
