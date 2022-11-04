@@ -2,6 +2,7 @@ import aqt
 from aqt import mw
 from aqt.utils import showInfo, qconnect
 import concurrent
+from anki.notes import Note
 # TODO(louisli): Try not to * import
 from aqt.qt import *
 from aqt import gui_hooks
@@ -86,12 +87,10 @@ def scrape_images_and_update(form, note_ids, browser):
     """
     Main entry point for logic that runs after the start button is pressed.
     """
-    pass
     # Save new config to disk, then use new config to scrape images.
     new_config = serialize_config_from_ui(form)
     mw.addonManager.writeConfig(__name__, new_config)
 
-    mw.checkpoint("Add Bing Images")
     browser.begin_reset()
 
     # Begin a pool of executors. One job = one query.
@@ -99,6 +98,7 @@ def scrape_images_and_update(form, note_ids, browser):
         jobs = []
         processed_notes = set()
         scraper = BingScraper(executor, mw)
+        updated_notes : List[Note] = []
 
         for c, note_id in enumerate(note_ids, 1):
             note = mw.col.get_note(note_id)
@@ -135,10 +135,14 @@ def scrape_images_and_update(form, note_ids, browser):
 
         for future in concurrent.futures.as_completed(jobs):
             result = future.result()
-            apply_result_to_note(result)
+            updated_notes.append(apply_result_to_note(result))
             processed_notes.add(note_id)
             label = "Processed %s notes..." % len(processed_notes)
             mw.progress.update(label)
+
+    # All notes get bulk updated at the end. This should work well with undo:
+    # https://forums.ankiweb.net/t/anki-2-1-45-beta/10664/121
+    mw.col.update_notes(updated_notes)
 
     # No idea what this line does but the other guy had it.
     # No idea what any of this does, actually.
@@ -147,12 +151,14 @@ def scrape_images_and_update(form, note_ids, browser):
     mw.requireReset()
     showInfo("Number of notes processed: %d" % len(note_ids), parent=browser)
 
-def apply_result_to_note(result: QueryResult, delimiter=" ") -> None:
+def apply_result_to_note(result: QueryResult, delimiter=" ") -> Note:
     """
     Given a QueryResult, mutates a note using the information in the result.
 
     `delimiter` was a param in the old codebase, not really configurable for
     now.
+
+    This returns the note but does NOT persist it to the database immediately.
     """
     if not result.images:
         return
@@ -170,7 +176,7 @@ def apply_result_to_note(result: QueryResult, delimiter=" ") -> None:
         note[result.target_field] += delimiter.join(new_note_html)
     else:
         note[result.target_field] = delimiter.join(new_note_html)
-    note.flush()
+    return note
 
 def setup_menu(browser: aqt.browser.Browser) -> None:
     """
